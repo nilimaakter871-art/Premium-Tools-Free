@@ -184,6 +184,7 @@ app.post('/api/github/sync-full-project', async (req, res) => {
       'src/components/Footer.tsx',
       'src/components/Navbar.tsx',
       'data/store.json',
+      'wrangler.jsonc',
       'public/_redirects',
     ];
 
