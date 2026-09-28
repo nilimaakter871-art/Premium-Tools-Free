@@ -186,7 +186,6 @@ app.post('/api/github/sync-full-project', async (req, res) => {
       'data/store.json',
       'wrangler.jsonc',
       'worker/index.ts',
-      'public/_redirects',
     ];
 
     const results: Array<{ file: string; success: boolean; error?: string }> = [];

@@ -220,7 +220,6 @@ export function apiServerPlugin(): Plugin {
                 'data/store.json',
                 'wrangler.jsonc',
                 'worker/index.ts',
-                'public/_redirects',
               ];
 
               const results: Array<{ file: string; success: boolean; error?: string }> = [];
