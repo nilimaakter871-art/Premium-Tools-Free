@@ -87,6 +87,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [localSiteSettings, setLocalSiteSettings] = useState<SiteSettings>(storeData.siteSettings);
   const [localGithubSettings, setLocalGithubSettings] = useState<GitHubSyncSettings>(storeData.githubSettings);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [showGithubToken, setShowGithubToken] = useState(false);
+  const [isTestingGithub, setIsTestingGithub] = useState(false);
 
   // App Editor Modal State
   const [editingApp, setEditingApp] = useState<AppItem | null>(null);
@@ -309,6 +311,44 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Save GitHub Settings
   const handleSaveGithubSettings = () => {
     commitStoreUpdate({ ...storeData, githubSettings: localGithubSettings }, 'GitHub Configuration');
+  };
+
+  // Test GitHub Connection
+  const handleTestGitHubConnection = async () => {
+    if (!localGithubSettings.githubToken || !localGithubSettings.githubRepo) {
+      showToast('Please enter both GitHub Token (PAT) and Repo Name first.', 'error');
+      return;
+    }
+    setIsTestingGithub(true);
+    try {
+      const cleanRepo = localGithubSettings.githubRepo
+        .replace(/^https?:\/\/github\.com\//, '')
+        .replace(/\.git$/, '')
+        .trim();
+      const res = await fetch(`https://api.github.com/repos/${cleanRepo}`, {
+        headers: {
+          Authorization: `Bearer ${localGithubSettings.githubToken.trim()}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      });
+      if (res.ok) {
+        const repoData = await res.json();
+        showToast(
+          `✓ GitHub Connected! Repository: ${repoData.full_name} (${repoData.private ? 'Private' : 'Public'})`,
+          'success'
+        );
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(`GitHub Connection Failed: ${err.message || res.statusText}`, 'error');
+      }
+    } catch (err: unknown) {
+      showToast(
+        `Network Error testing GitHub: ${err instanceof Error ? err.message : String(err)}`,
+        'error'
+      );
+    } finally {
+      setIsTestingGithub(false);
+    }
   };
 
   // Export Backup File
@@ -1116,21 +1156,49 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </h4>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  GitHub Personal Access Token (PAT)
-                </label>
-                <input
-                  type="password"
-                  value={localGithubSettings.githubToken}
-                  onChange={(e) =>
-                    setLocalGithubSettings({
-                      ...localGithubSettings,
-                      githubToken: e.target.value,
-                    })
-                  }
-                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0a0b12] border border-white/10 text-xs text-white focus:border-cyan-400 outline-none font-mono"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-300">
+                    GitHub Personal Access Token (PAT) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleTestGitHubConnection}
+                    disabled={isTestingGithub || !localGithubSettings.githubToken}
+                    className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isTestingGithub ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-3 h-3" />
+                    )}
+                    <span>{isTestingGithub ? 'Testing...' : 'Test Connection'}</span>
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showGithubToken ? 'text' : 'password'}
+                    value={localGithubSettings.githubToken}
+                    onChange={(e) =>
+                      setLocalGithubSettings({
+                        ...localGithubSettings,
+                        githubToken: e.target.value,
+                      })
+                    }
+                    placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-[#0a0b12] border border-white/10 text-xs text-white focus:border-cyan-400 outline-none font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGithubToken(!showGithubToken)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    {showGithubToken ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
                 <p className="text-[10px] text-slate-400 mt-1">
                   Create a token with <code className="text-cyan-300">repo</code> scope at{' '}
                   <a
@@ -1459,21 +1527,75 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </span>
                 </div>
 
+              {/* Ad Network & Monetization for this Tool */}
+              <div className="rounded-2xl border border-cyan-500/20 bg-[#090a12] p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    Tool Ad Network & Monetization (Adsterra / Monetag)
+                  </span>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Custom App Ad Link (Optional)
+                    Direct Ad Link for this Tool
                   </label>
                   <input
                     type="text"
-                    value={editingApp.adLink}
+                    value={editingApp.adLink || ''}
                     onChange={(e) => setEditingApp({ ...editingApp, adLink: e.target.value })}
-                    placeholder={localAdSettings.defaultAdLink}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0a0b12] border border-white/10 text-xs text-white focus:border-cyan-400 outline-none"
+                    placeholder={localAdSettings.defaultAdLink || 'https://splendid-garage.com/SJ7fF4'}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121321] border border-white/10 text-xs text-white focus:border-cyan-400 outline-none"
                   />
                   <span className="text-[10px] text-slate-400">
-                    Leave blank to use the default smartlink ({localAdSettings.defaultAdLink}).
+                    Smartlink triggered when visitor opens tool or clicks sponsored fast-track unlock.
                   </span>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Custom Banner / Ad Code for this Tool (Optional)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editingApp.customAdCode || ''}
+                    onChange={(e) => setEditingApp({ ...editingApp, customAdCode: e.target.value })}
+                    placeholder="<!-- Paste 300x250 or native ad snippet specifically for this app -->"
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#121321] border border-white/10 text-xs text-cyan-200 focus:border-cyan-400 outline-none font-mono text-[11px]"
+                  />
+                  <span className="text-[10px] text-slate-400">
+                    If provided, this ad code replaces the global modal banner when this tool is viewed.
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Sponsor Box Text
+                    </label>
+                    <input
+                      type="text"
+                      value={editingApp.sponsorName || ''}
+                      onChange={(e) => setEditingApp({ ...editingApp, sponsorName: e.target.value })}
+                      placeholder="Unlock Fast Direct Downloads & Uncapped Bandwidth"
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#121321] border border-white/10 text-xs text-white focus:border-cyan-400 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Sponsor Box Link
+                    </label>
+                    <input
+                      type="text"
+                      value={editingApp.sponsorLink || ''}
+                      onChange={(e) => setEditingApp({ ...editingApp, sponsorLink: e.target.value })}
+                      placeholder="Optional custom sponsor link"
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#121321] border border-white/10 text-xs text-white focus:border-cyan-400 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
               </div>
 
               {/* Timer & Featured Toggle */}

@@ -69,23 +69,23 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
 
   const progressPercentage = Math.max(0, Math.min(100, ((totalTime - timeLeft) / totalTime) * 100));
 
+  const targetUrl = app.mainContentUrl || siteSettings.telegramChannel || adSettings.defaultMainContentUrl;
+  const effectiveAdUrl = app.sponsorLink || app.adLink || adSettings.defaultAdLink;
+  const effectiveBannerCode = app.customAdCode || adSettings.downloadBannerCode;
+  const effectiveSponsorName = app.sponsorName || 'Unlock Fast Direct Downloads & Uncapped Premium Bandwidth';
+
   const handleSponsorClick = () => {
-    const adUrl = app.adLink || adSettings.defaultAdLink;
-    if (adUrl) {
-      window.open(adUrl, '_blank');
+    if (effectiveAdUrl) {
+      window.open(effectiveAdUrl, '_blank');
       setAdTriggered(true);
     }
   };
 
   const handleDirectDownloadClick = () => {
-    const targetUrl = app.mainContentUrl || siteSettings.telegramChannel || adSettings.defaultMainContentUrl;
     if (targetUrl) {
       window.open(targetUrl, '_blank');
     }
   };
-
-  const targetUrl = app.mainContentUrl || siteSettings.telegramChannel || adSettings.defaultMainContentUrl;
-  const adUrl = app.adLink || adSettings.defaultAdLink;
 
   return (
     <div
@@ -241,7 +241,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
                   </span>
                 </div>
                 <h5 className="text-xs sm:text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">
-                  Unlock Fast Direct Downloads & Uncapped Premium Bandwidth
+                  {effectiveSponsorName}
                 </h5>
               </div>
             </div>
@@ -251,17 +251,17 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           </div>
         )}
 
-        {/* Download Modal Banner Ad Container (if enabled in ad settings) */}
-        {adSettings.showDownloadBanner && (
+        {/* Download Modal Banner Ad Container (if enabled in ad settings or custom tool ad) */}
+        {(adSettings.showDownloadBanner || !!app.customAdCode) && (
           <div className="mb-4 overflow-hidden rounded-2xl border border-white/10 bg-[#0e0f19] p-3 text-center">
-            {adSettings.downloadBannerCode ? (
+            {effectiveBannerCode ? (
               <div
-                dangerouslySetInnerHTML={{ __html: adSettings.downloadBannerCode }}
+                dangerouslySetInnerHTML={{ __html: effectiveBannerCode }}
                 className="flex items-center justify-center min-h-[90px]"
               />
             ) : (
               <a
-                href={adUrl}
+                href={effectiveAdUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group block rounded-xl bg-gradient-to-r from-[#171a2e] to-[#121422] p-3 border border-white/5 hover:border-cyan-500/30 transition-all text-center"

@@ -39,6 +39,8 @@ export default function App() {
     return (
       path === '/admin' ||
       path === '/admin/' ||
+      path.endsWith('/admin') ||
+      path.endsWith('/admin/') ||
       path.includes('/admin') ||
       search.includes('admin') ||
       hash.includes('admin')
@@ -66,8 +68,8 @@ export default function App() {
         setIsLoading(false);
       });
 
-    // Listen for hash change to toggle admin
-    const handleHashChange = () => {
+    // Listen for hash change and popstate to toggle admin
+    const handleLocationChange = () => {
       if (checkIsAdminRoute()) {
         setCurrentView('admin');
       } else {
@@ -75,22 +77,32 @@ export default function App() {
       }
     };
 
-    window.addEventListener('hashchange', handleHashChange);
-    window.addEventListener('popstate', handleHashChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-      window.removeEventListener('popstate', handleHashChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
     };
   }, []);
 
   const handleOpenAdmin = () => {
-    window.location.hash = '#admin';
+    try {
+      window.history.pushState({ view: 'admin' }, '', '/admin');
+    } catch {
+      window.location.hash = '#admin';
+    }
     setCurrentView('admin');
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleCloseAdmin = () => {
-    window.location.hash = '';
+    try {
+      window.history.pushState({ view: 'store' }, '', '/');
+    } catch {
+      window.location.hash = '';
+    }
     setCurrentView('store');
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleUpdateStore = (updated: StoreData) => {

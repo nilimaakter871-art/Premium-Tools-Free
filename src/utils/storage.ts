@@ -102,30 +102,102 @@ export async function pushToGitHubApi(
     throw new Error('Please enter both your GitHub Token and Repository (e.g. username/repo)');
   }
 
-  const res = await fetch('/api/github/sync', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      token: settings.githubToken.trim(),
-      repo: settings.githubRepo.trim(),
-      branch: settings.githubBranch?.trim() || 'main',
-      filePath: settings.githubFilePath?.trim() || 'data/store.json',
-      content: JSON.stringify(dataToPush, null, 2),
-    }),
-  });
+  const contentStr = JSON.stringify(dataToPush, null, 2);
 
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({ error: 'Unknown GitHub sync error' }));
-    throw new Error(errData.error || `Sync failed with status ${res.status}`);
+  // 1. Try server endpoint first
+  try {
+    const res = await fetch('/api/github/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: settings.githubToken.trim(),
+        repo: settings.githubRepo.trim(),
+        branch: settings.githubBranch?.trim() || 'main',
+        filePath: settings.githubFilePath?.trim() || 'data/store.json',
+        content: contentStr,
+      }),
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      const commitUrl = result?.result?.commit?.html_url || '';
+      return {
+        success: true,
+        message: 'Successfully committed and pushed to GitHub repository!',
+        commitUrl,
+      };
+    }
+  } catch (serverErr) {
+    console.warn('[Storage] Server sync route unavailable, falling back to direct GitHub API:', serverErr);
   }
 
-  const result = await res.json();
-  const commitUrl = result?.result?.commit?.html_url || '';
-  return {
-    success: true,
-    message: 'Successfully committed and pushed to GitHub repository!',
-    commitUrl,
-  };
+  // 2. Direct browser fallback using GitHub REST API
+  try {
+    const token = settings.githubToken.trim();
+    const cleanRepo = settings.githubRepo.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').trim();
+    const cleanPath = (settings.githubFilePath || 'data/store.json').replace(/^\/+/, '').trim();
+    const targetBranch = settings.githubBranch?.trim() || 'main';
+
+    const baseUrl = `https://api.github.com/repos/${cleanRepo}/contents/${cleanPath}`;
+
+    let fileSha: string | undefined;
+    try {
+      const getRes = await fetch(`${baseUrl}?ref=${encodeURIComponent(targetBranch)}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      });
+      if (getRes.status === 200) {
+        const data = await getRes.json();
+        fileSha = data.sha;
+      }
+    } catch (err) {
+      console.warn('[Direct GitHub] Error reading file sha:', err);
+    }
+
+    const utf8Bytes = new TextEncoder().encode(contentStr);
+    let binary = '';
+    for (let i = 0; i < utf8Bytes.length; i++) {
+      binary += String.fromCharCode(utf8Bytes[i]);
+    }
+    const base64Content = btoa(binary);
+
+    const putBody: Record<string, unknown> = {
+      message: `chore: update premium tools & ads settings [${new Date().toISOString()}]`,
+      content: base64Content,
+      branch: targetBranch,
+    };
+    if (fileSha) {
+      putBody.sha = fileSha;
+    }
+
+    const putRes = await fetch(baseUrl, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(putBody),
+    });
+
+    if (!putRes.ok) {
+      const errText = await putRes.text();
+      throw new Error(`GitHub API Error (${putRes.status}): ${errText}`);
+    }
+
+    const result = await putRes.json();
+    const commitUrl = result?.commit?.html_url || '';
+    return {
+      success: true,
+      message: 'Successfully pushed to GitHub repository!',
+      commitUrl,
+    };
+  } catch (directErr: unknown) {
+    throw new Error(directErr instanceof Error ? directErr.message : String(directErr));
+  }
 }
 
 // Popunder frequency control

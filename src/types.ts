@@ -7,6 +7,9 @@ export interface AppItem {
   version: string;
   fileSize: string;
   adLink: string;
+  customAdCode?: string;
+  sponsorName?: string;
+  sponsorLink?: string;
   mainContentUrl: string;
   timerSeconds: number;
   downloadsCount: number;
