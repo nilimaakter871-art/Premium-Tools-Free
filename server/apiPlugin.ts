@@ -219,6 +219,7 @@ export function apiServerPlugin(): Plugin {
                 'src/components/Navbar.tsx',
                 'data/store.json',
                 'wrangler.jsonc',
+                'worker/index.ts',
                 'public/_redirects',
               ];
 

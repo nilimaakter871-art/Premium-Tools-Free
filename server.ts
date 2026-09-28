@@ -185,6 +185,7 @@ app.post('/api/github/sync-full-project', async (req, res) => {
       'src/components/Navbar.tsx',
       'data/store.json',
       'wrangler.jsonc',
+      'worker/index.ts',
       'public/_redirects',
     ];
 
