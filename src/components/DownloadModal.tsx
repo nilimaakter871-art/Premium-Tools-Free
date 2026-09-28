@@ -74,19 +74,6 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   const effectiveBannerCode = app.customAdCode || adSettings.downloadBannerCode;
   const effectiveSponsorName = app.sponsorName || 'Unlock Fast Direct Downloads & Uncapped Premium Bandwidth';
 
-  const handleSponsorClick = () => {
-    if (effectiveAdUrl) {
-      window.open(effectiveAdUrl, '_blank');
-      setAdTriggered(true);
-    }
-  };
-
-  const handleDirectDownloadClick = () => {
-    if (targetUrl) {
-      window.open(targetUrl, '_blank');
-    }
-  };
-
   return (
     <div
       role="dialog"
@@ -211,23 +198,33 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
               </div>
 
               {/* Huge Download CTA */}
-              <button
-                onClick={handleDirectDownloadClick}
-                className="btn-3d-cyan w-full py-3.5 rounded-2xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_30px_rgba(0,242,234,0.5)] border-2 border-cyan-300"
+              <a
+                href={targetUrl || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  setAdTriggered(true);
+                }}
+                className="btn-3d-cyan w-full py-3.5 rounded-2xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_30px_rgba(0,242,234,0.5)] border-2 border-cyan-300 select-none no-underline"
               >
                 <Download className="h-5 w-5" />
                 <span>DOWNLOAD FILE NOW</span>
                 <ExternalLink className="h-4 w-4" />
-              </button>
+              </a>
             </div>
           )}
         </div>
 
         {/* Sponsored Fast-Track Unlock Box (Monetag/Adsterra Ad Placement) */}
         {!isCompleted && (
-          <div
-            onClick={handleSponsorClick}
-            className="group mb-5 flex items-center justify-between gap-3 rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/60 via-[#141829] to-blue-950/60 p-3.5 sm:p-4 cursor-pointer hover:border-cyan-400 transition-all shadow-md"
+          <a
+            href={effectiveAdUrl || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              setAdTriggered(true);
+            }}
+            className="group mb-5 flex items-center justify-between gap-3 rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/60 via-[#141829] to-blue-950/60 p-3.5 sm:p-4 cursor-pointer hover:border-cyan-400 transition-all shadow-md select-none no-underline"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/20 text-cyan-300 border border-cyan-400/30 group-hover:scale-105 transition-transform">
@@ -248,7 +245,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
             <span className="shrink-0 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-3 py-1.5 text-xs font-bold text-black shadow-md shadow-cyan-400/20 group-hover:scale-105 transition-transform whitespace-nowrap">
               Unlock Fast ↗
             </span>
-          </div>
+          </a>
         )}
 
         {/* Download Modal Banner Ad Container (if enabled in ad settings or custom tool ad) */}
