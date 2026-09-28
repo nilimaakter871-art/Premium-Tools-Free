@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .btn-3d-cyan {
+    background: linear-gradient(135deg, #00f2ea 0%, #00c8d1 100%);
+    color: #000000;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(0, 242, 234, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transition: all 0.2s ease;
+  }
+  .btn-3d-cyan:hover {
+    box-shadow: 0 6px 24px rgba(0, 242, 234, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transform: translateY(-1px);
+  }
+  .btn-3d-cyan:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(0, 242, 234, 0.4);
+  }
+
+  .cyber-card {
+    background: #12131f;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .cyber-card:hover {
+    border-color: rgba(0, 242, 234, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 242, 234, 0.12);
+  }
+}
+
+/* Custom sleek scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0c12;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f2233;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00f2ea;
+}

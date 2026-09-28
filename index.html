@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="monetag" content="39c10ea19708c6dc6714357960b97250" />
+    <title>Premium Store - App & Tools Hub</title>
+    <meta name="description" content="Download 100% working premium apps, software, and tools with instant unlock, ad network integration, and Telegram channel delivery." />
+    <meta property="og:title" content="Premium Store - App & Tools Hub" />
+    <meta property="og:description" content="Download 100% working premium apps, software, and tools with instant unlock, ad network integration, and Telegram channel delivery." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <!-- Admin Panel Popunder & Ad Shield: Prevents ads from triggering in Admin Panel -->
+    <script>
+      (function() {
+        window.__IS_ADMIN_MODE = false;
+        function checkIsAdmin(e) {
+          try {
+            if (window.__IS_ADMIN_MODE) return true;
+            var path = (window.location.pathname || '').toLowerCase();
+            var search = (window.location.search || '').toLowerCase();
+            var hash = (window.location.hash || '').toLowerCase();
+            if (path.indexOf('admin') !== -1 || search.indexOf('admin') !== -1 || hash.indexOf('admin') !== -1) {
+              return true;
+            }
+            if (document.getElementById('admin-panel-root') || document.querySelector('[data-admin-panel="true"]')) {
+              return true;
+            }
+            if (e && e.target && typeof e.target.closest === 'function') {
+              if (e.target.closest('#admin-panel-root') || e.target.closest('[data-admin-panel="true"]')) {
+                return true;
+              }
+            }
+          } catch (err) {}
+          return false;
+        }
+        // Shield window.open from popunders while in Admin Panel
+        var _originalWindowOpen = window.open;
+        window.open = function(url, target, features) {
+          if (checkIsAdmin()) {
+            console.warn('[AdShield] Popunder ad blocked in Admin Panel:', url);
+            return null;
+          }
+          return _originalWindowOpen.apply(this, arguments);
+        };
+        // Shield programmatic anchor clicks from popunder triggers in Admin Panel
+        var _originalAnchorClick = HTMLAnchorElement.prototype.click;
+        HTMLAnchorElement.prototype.click = function() {
+          if (checkIsAdmin()) {
+            var href = (this.getAttribute('href') || '').toLowerCase();
+            if (href.indexOf('researchingsweatexit') !== -1 || 
+                href.indexOf('quge5') !== -1 ||
+                href.indexOf('splendid-garage') !== -1 || 
+                href.indexOf('data527') !== -1 ||
+                (!this.closest('#admin-panel-root') && !this.closest('#root'))) {
+              console.warn('[AdShield] Ad redirect click blocked in Admin Panel');
+              return;
+            }
+          }
+          return _originalAnchorClick.apply(this, arguments);
+        };
+      })();
+    </script>
+  </head>
+  <body class="bg-[#0b0c12] text-white selection:bg-[#00f2ea] selection:text-black antialiased font-['Poppins',sans-serif]">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

@@ -1,0 +1,7 @@
+{
+  "name": "Premium Store - App & Tools Hub",
+  "description": "Download 100% working premium apps, software, and tools with instant unlock, ad network integration, and Telegram channel delivery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
