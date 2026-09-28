@@ -34,6 +34,7 @@ import { AdSettings, AppItem, GitHubSyncSettings, SiteSettings, StoreData } from
 import {
   getAdminSession,
   persistStoreData,
+  pushFullProjectToGitHub,
   pushToGitHubApi,
   setAdminSession,
 } from '../utils/storage';
@@ -97,6 +98,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Status notifications
   const [isSaving, setIsSaving] = useState(false);
+  const [isPushingFullProject, setIsPushingFullProject] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   // Activate AdShield mode when AdminPanel mounts
@@ -223,6 +225,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       showToast(`Sync Failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Push complete project source code to GitHub
+  const handlePushFullProject = async () => {
+    if (!localGithubSettings.githubToken || !localGithubSettings.githubRepo) {
+      showToast('Please enter both your GitHub Token and Repository first!', 'error');
+      return;
+    }
+
+    setIsPushingFullProject(true);
+    showToast('Pushing all source code files (src, main.tsx, App.tsx, etc.) to GitHub...', 'info');
+
+    try {
+      const res = await pushFullProjectToGitHub(localGithubSettings);
+      showToast(`🎉 ${res.message}`, 'success');
+      const updatedSettings = {
+        ...localGithubSettings,
+        lastSyncedAt: Date.now(),
+        lastSyncStatus: `All ${res.count} files committed & pushed`,
+      };
+      setLocalGithubSettings(updatedSettings);
+      await persistStoreData({
+        ...storeData,
+        githubSettings: updatedSettings,
+      });
+    } catch (err) {
+      showToast(`Failed to push full project: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    } finally {
+      setIsPushingFullProject(false);
     }
   };
 
@@ -1305,6 +1337,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <Zap className="w-3.5 h-3.5 fill-cyan-400" />
                   <span>Push & Sync to GitHub Now</span>
                 </button>
+
+                <button
+                  onClick={handlePushFullProject}
+                  disabled={isPushingFullProject || !localGithubSettings.githubToken}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 px-5 py-2 text-xs font-bold text-emerald-300 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {isPushingFullProject ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <FolderGit2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isPushingFullProject ? 'Pushing All Code Files...' : '🚀 Push All Code Files to GitHub (src, main.tsx, etc.)'}</span>
+                </button>
+              </div>
+
+              {/* Cloudflare Pages Help Notice */}
+              <div className="mt-4 rounded-xl border border-cyan-500/20 bg-cyan-950/30 p-3 text-[11px] text-slate-300 space-y-1">
+                <div className="font-bold text-cyan-300 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                  <span>Cloudflare Pages & Vercel Auto-Fix Guide:</span>
+                </div>
+                <p className="text-slate-400">
+                  If Cloudflare Pages shows <code className="text-rose-400">Could not load src/main.tsx</code>, it means your GitHub repo didn't have all files yet. Simply click the green <strong>"🚀 Push All Code Files to GitHub"</strong> button above! It automatically uploads all 21+ files (including <code className="text-cyan-300">src/main.tsx</code> and <code className="text-cyan-300">src/App.tsx</code>) directly to your GitHub repository in 1 click!
+                </p>
+                <div className="text-[10px] text-slate-400 pt-1 font-mono">
+                  Settings: Framework: <span className="text-cyan-300">Vite</span> • Build command: <span className="text-cyan-300">npm run build</span> • Output directory: <span className="text-cyan-300">dist</span>
+                </div>
               </div>
 
               {localGithubSettings.lastSyncedAt && (

@@ -183,6 +183,80 @@ export function apiServerPlugin(): Plugin {
           return;
         }
 
+        // Handle POST /api/github/sync-full-project
+        if (url === '/api/github/sync-full-project' && req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk) => {
+            body += chunk;
+          });
+          req.on('end', async () => {
+            try {
+              const payload = JSON.parse(body);
+              const { token, repo, branch = 'main' } = payload;
+              if (!token || !repo) {
+                throw new Error('Token and repo are required');
+              }
+
+              const filesToSync = [
+                'index.html',
+                'package.json',
+                'vite.config.ts',
+                'tsconfig.json',
+                'src/main.tsx',
+                'src/App.tsx',
+                'src/index.css',
+                'src/types.ts',
+                'src/data/initialData.ts',
+                'src/utils/storage.ts',
+                'src/components/AdBanners.tsx',
+                'src/components/AdminPanel.tsx',
+                'src/components/AnnouncementBanner.tsx',
+                'src/components/AppCard.tsx',
+                'src/components/CategoryFilter.tsx',
+                'src/components/DownloadModal.tsx',
+                'src/components/FloatingTelegram.tsx',
+                'src/components/Footer.tsx',
+                'src/components/Navbar.tsx',
+                'data/store.json',
+                'public/_redirects',
+              ];
+
+              const results: Array<{ file: string; success: boolean; error?: string }> = [];
+
+              for (const relFile of filesToSync) {
+                const fullPath = path.resolve(process.cwd(), relFile);
+                if (fs.existsSync(fullPath)) {
+                  try {
+                    const content = fs.readFileSync(fullPath, 'utf-8');
+                    await syncToGitHubApi({
+                      token,
+                      repo,
+                      branch,
+                      filePath: relFile,
+                      content,
+                    });
+                    results.push({ file: relFile, success: true });
+                  } catch (fileErr) {
+                    results.push({
+                      file: relFile,
+                      success: false,
+                      error: fileErr instanceof Error ? fileErr.message : String(fileErr),
+                    });
+                  }
+                }
+              }
+
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true, count: results.filter((r) => r.success).length, results }));
+            } catch (err: unknown) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }));
+            }
+          });
+          return;
+        }
+
         next();
       });
     },

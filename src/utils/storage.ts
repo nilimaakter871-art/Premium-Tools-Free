@@ -200,6 +200,36 @@ export async function pushToGitHubApi(
   }
 }
 
+export async function pushFullProjectToGitHub(
+  settings: GitHubSyncSettings
+): Promise<{ success: boolean; count: number; message: string }> {
+  if (!settings.githubToken.trim() || !settings.githubRepo.trim()) {
+    throw new Error('Please enter both your GitHub Token and Repository (e.g. username/repo)');
+  }
+
+  const res = await fetch('/api/github/sync-full-project', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: settings.githubToken.trim(),
+      repo: settings.githubRepo.trim(),
+      branch: settings.githubBranch?.trim() || 'main',
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Server error (${res.status}): ${errorText}`);
+  }
+
+  const data = await res.json();
+  return {
+    success: true,
+    count: data.count || 0,
+    message: `Successfully pushed ${data.count} project files (including src/main.tsx, App.tsx, etc.) to GitHub!`,
+  };
+}
+
 // Popunder frequency control
 export function canTriggerPopunder(cooldownMinutes: number = 1): boolean {
   if (typeof window === 'undefined') return false;

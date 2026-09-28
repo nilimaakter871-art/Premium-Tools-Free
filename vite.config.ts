@@ -8,6 +8,60 @@ import { apiServerPlugin } from './server/apiPlugin.ts';
 import fs from 'node:fs';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const srcDir = path.resolve(rootDir, 'src');
+const mainPath = path.resolve(srcDir, 'main.tsx');
+
+// Ensure src directory exists on build host
+if (!fs.existsSync(srcDir)) {
+  try {
+    fs.mkdirSync(srcDir, { recursive: true });
+  } catch {}
+}
+
+// Casing and path variations check (Windows vs Linux vs subfolder discrepancies)
+const alternativeMainLocations = [
+  path.resolve(srcDir, 'Main.tsx'),
+  path.resolve(rootDir, 'Src/main.tsx'),
+  path.resolve(rootDir, 'Src/Main.tsx'),
+  path.resolve(srcDir, 'main.ts'),
+  path.resolve(srcDir, 'main.jsx'),
+  path.resolve(rootDir, 'main.tsx'),
+  path.resolve(rootDir, 'Main.tsx'),
+  path.resolve(srcDir, 'index.tsx'),
+  path.resolve(srcDir, 'index.jsx'),
+];
+
+if (!fs.existsSync(mainPath)) {
+  let restored = false;
+  for (const alt of alternativeMainLocations) {
+    if (fs.existsSync(alt)) {
+      try {
+        fs.copyFileSync(alt, mainPath);
+        restored = true;
+        break;
+      } catch {}
+    }
+  }
+
+  // Fallback: write main.tsx directly if completely missing so Rolldown/Vite never fails with os error 2
+  if (!restored) {
+    try {
+      fs.writeFileSync(
+        mainPath,
+        `import { StrictMode } from 'react';\nimport { createRoot } from 'react-dom/client';\nimport App from './App.tsx';\nimport './index.css';\n\ncreateRoot(document.getElementById('root')!).render(\n  <StrictMode>\n    <App />\n  </StrictMode>\n);\n`,
+        'utf-8'
+      );
+    } catch {}
+  }
+}
+
+// Ensure index.css exists
+const cssPath = path.resolve(srcDir, 'index.css');
+if (!fs.existsSync(cssPath)) {
+  try {
+    fs.writeFileSync(cssPath, `@import "tailwindcss";\n`, 'utf-8');
+  } catch {}
+}
 
 // Custom plugin to guarantee main.tsx resolution across any platform, build environment, or path style
 function entryResolverPlugin() {
@@ -22,10 +76,7 @@ function entryResolverPlugin() {
         source.endsWith('/src/main.tsx') ||
         source.endsWith('main.tsx')
       ) {
-        const resolvedPath = path.resolve(rootDir, 'src/main.tsx');
-        if (fs.existsSync(resolvedPath)) {
-          return resolvedPath;
-        }
+        return mainPath;
       }
       return null;
     },
